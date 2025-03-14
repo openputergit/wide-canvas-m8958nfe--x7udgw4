@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smile to Earn - Share Your Happiness</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        #video {
+            width: 100%;
+            border-radius: 1rem;
+        }
+        #canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen p-4">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-2">Smile to Earn</h1>
+            <p class="text-gray-600">Share your smile, spread happiness, earn rewards!</p>
+        </header>
+
+        <div class="camera-container mb-8">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="flex justify-center gap-4 mt-4">
+                <button @click="takePhoto" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2">
+                    <i class="bi bi-camera-fill"></i> Take Photo
+                </button>
+                <button @click="startCamera" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-full flex items-center gap-2">
+                    <i class="bi bi-camera-video-fill"></i> Start Camera
+                </button>
+            </div>
+        </div>
+
+        <div class="posts-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div v-for="(post, index) in posts" :key="index" class="bg-white rounded-lg shadow-md overflow-hidden">
+                <img :src="post.image" alt="Smile post" class="w-full h-48 object-cover">
+                <div class="p-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600">Posted {{ post.timestamp }}</span>
+                        <div class="flex items-center gap-2">
+                            <button @click="likePost(index)" class="text-red-500 hover:text-red-600">
+                                <i class="bi" :class="post.liked ? 'bi-heart-fill' : 'bi-heart'"></i>
+                                {{ post.likes }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    posts: [],
+                    video: null,
+                    canvas: null,
+                    stream: null
+                }
+            },
+            mounted() {
+                this.video = document.getElementById('video')
+                this.canvas = document.getElementById('canvas')
+                this.startCamera()
+            },
+            methods: {
+                async startCamera() {
+                    try {
+                        this.stream = await navigator.mediaDevices.getUserMedia({ 
+                            video: { facingMode: "user" }
+                        })
+                        this.video.srcObject = this.stream
+                    } catch (err) {
+                        console.error("Error accessing camera:", err)
+                        alert("Please enable camera access to use this app")
+                    }
+                },
+                takePhoto() {
+                    this.canvas.width = this.video.videoWidth
+                    this.canvas.height = this.video.videoHeight
+                    const context = this.canvas.getContext('2d')
+                    context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height)
+                    
+                    const image = this.canvas.toDataURL('image/jpeg')
+                    this.addPost(image)
+                },
+                addPost(image) {
+                    const now = new Date()
+                    this.posts.unshift({
+                        image,
+                        timestamp: now.toLocaleString(),
+                        likes: 0,
+                        liked: false
+                    })
+                },
+                likePost(index) {
+                    if (!this.posts[index].liked) {
+                        this.posts[index].likes++
+                        this.posts[index].liked = true
+                    } else {
+                        this.posts[index].likes--
+                        this.posts[index].liked = false
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
